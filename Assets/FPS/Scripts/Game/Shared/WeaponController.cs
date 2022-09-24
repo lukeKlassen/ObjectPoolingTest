@@ -454,8 +454,8 @@ namespace Unity.FPS.Game
                 GameObject projectileObject = m_ObjectPool.GetInactivePoolObject();
                 projectileObject.transform.position = WeaponMuzzle.position;
                 projectileObject.transform.rotation = Quaternion.LookRotation( shotDirection );
+                projectileObject.GetComponent<ProjectileBase>().Shoot(this);
                 projectileObject.SetActive( true );
-                projectileObject.GetComponent<ProjectileBase>()?.Shoot(this);
             }
 
             // muzzle flash

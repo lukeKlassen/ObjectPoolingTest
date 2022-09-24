@@ -4,70 +4,79 @@ using UnityEngine;
 
 public class ObjectPool : MonoBehaviour
 {
-    [SerializeField] private GameObject m_pooledGameObject = null; // game object to pool 
-    [SerializeField] private int m_numPooled = 10; // number of game objects to store in pool
-    [SerializeField] private string m_poolStats;
-    private List<GameObject> _inactivePool; // list of gameobjects which can be reused
-    private List<GameObject> _activePool; // list of gameobjects which are in use
+    [SerializeField] private GameObject m_PooledGameObject = null; // game object to pool 
+    [SerializeField] private int m_NumPooled = 10; // number of game objects to store in pool
+    [SerializeField] private string m_PoolStats;
+    private List<GameObject> m_InactivePool; // list of gameobjects which can be reused
+    private List<GameObject> m_ActivePool; // list of gameobjects which are in use
 
     void Start()
     {
         // print errors on incorrect usage
-        if ( m_pooledGameObject == null ) {
+        if ( m_PooledGameObject == null ) {
             Debug.LogError( "Pooling failed - No game object found to pool" );
             return;
         }
-        if ( m_numPooled <= 0 ) {
+        if ( m_NumPooled <= 0 ) {
             Debug.LogError( "Pooling failed - number of objects to pool must be greater than 0 " );
             return;
         }
-        _inactivePool = new List<GameObject>( m_numPooled );
-        _activePool = new List<GameObject>( m_numPooled );
+        m_InactivePool = new List<GameObject>( m_NumPooled );
+        m_ActivePool = new List<GameObject>( m_NumPooled );
         // instantiate game objects up to num pooled, adding them to the inactive pool
-        for ( int i = 0; i < m_numPooled; ++i ) {
-            GameObject g = Instantiate( m_pooledGameObject );
-            g.SetActive(false);
-            _inactivePool.Add( g );
+        for ( int i = m_InactivePool.Count; i < m_NumPooled; ++i ) {
+            GameObject g = Instantiate( m_PooledGameObject );
+            g.SetActive( false );
+            m_InactivePool.Add( g );
         }
     }
 
     void Update()
     {
-        m_poolStats = "num Pooled: " + m_numPooled + " inactive: " + _inactivePool.Count + " active: " + _activePool.Count;
+#if UNITY_EDITOR
+        m_PoolStats = "num Pooled: " + m_NumPooled + " inactive: " + m_InactivePool.Count + " active: " + m_ActivePool.Count;
+#endif
     }
 
     /*
-        Returns an object from the pool which has inUse: False
-        If all objects in the pool are in use, it will instead Instantiate and return 
-        a new game object of this type. 
+        Returns an object from the inactive pool of objects
+        If all objects in the pool are in use, it will instead Instantiate and return a new game object.
+        Optimized with two pools to return new objects efficiently, moving cost over to deactivation
     */
     public GameObject GetInactivePoolObject() {
-        while ( _inactivePool.Count > 0 ) { // for safety we run through inactive pool, checking to make sure our object is inactive
-            GameObject poppedObject = _inactivePool[ _inactivePool.Count - 1 ];
-            _inactivePool.RemoveAt(_inactivePool.Count - 1); // RemoveAt is O(1) at last index
-            _activePool.Add( poppedObject );
-            if ( poppedObject.activeSelf ) { // if we find an active object in the inactive pool, swap it immediately and don't return it
-                Debug.LogError( "Active PoolableObject found in inactive pool" );
+        while ( m_InactivePool.Count > 0 ) { // for safety we run through inactive pool, checking to make sure our object is inactive
+            GameObject poppedObject = m_InactivePool[ m_InactivePool.Count - 1 ];
+            m_InactivePool.RemoveAt(m_InactivePool.Count - 1); // RemoveAt is O(1) at last index
+            m_ActivePool.Add( poppedObject );
+            if ( poppedObject.activeInHierarchy ) { // if we find an active object in the inactive pool, swap it immediately and don't return it
+                Debug.LogWarning( "Active PoolableObject found in inactive pool" );
             } else {
                 return poppedObject;
             }
         }
         // no objects in inactive pool found, Instantiate another object
-        GameObject g = Instantiate( m_pooledGameObject );
-        _activePool.Add( g );
-        m_numPooled++;
+        Debug.LogWarning( "Ran out of pooled objects, had to instantiate new object" );
+        GameObject g = Instantiate( m_PooledGameObject );
+        m_ActivePool.Add( g );
+        m_NumPooled++;
         return g;
     }
 
     /*
-        Deactivates the given object by setting IsActive: False and marks it for future reuse
+        Deactivates the given object by setting it to be inactive and moving it to the 
+        inactive pool for future use.
     */
     public void DeactivatePoolObject( GameObject g ) {
         g.SetActive( false );
-        _activePool.Remove( g ); // requires linear search through the active pool
-        _inactivePool.Add( g );
+        m_ActivePool.Remove( g ); // requires linear search through the active pool
+        if ( !m_InactivePool.Contains(g) ) { // requires linear search through inactive pool
+            m_InactivePool.Add( g );
+        }
     }
 
+    /*
+        Waits for 'timeDelay' seconds before calling 'DeactivatePoolObject' on the input game object
+    */
     public void DelayDeactivate( GameObject g, float timeDelay ) {
         StartCoroutine( DelayCoroutine( g, timeDelay ) );
     }

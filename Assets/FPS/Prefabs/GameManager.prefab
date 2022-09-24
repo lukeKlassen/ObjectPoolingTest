@@ -234,9 +234,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4fee0d524e8938a4e82d766aa7db421c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_pooledGameObject: {fileID: 3659995153115176983, guid: 3c6b27d949cdda749892906e1f1d1b27,
+  m_PooledGameObject: {fileID: 3659995153115176983, guid: 3c6b27d949cdda749892906e1f1d1b27,
     type: 3}
-  m_numPooled: 100
+  m_NumPooled: 10
 --- !u!1 &1315839542190839943
 GameObject:
   m_ObjectHideFlags: 0
