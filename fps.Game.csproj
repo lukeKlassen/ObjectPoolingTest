@@ -733,6 +733,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="ObjectPoolAssembly.csproj">
+      <Project>{17181c38-658f-9011-5d13-793d2584d4a0}</Project>
+      <Name>ObjectPoolAssembly</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.

@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using UnityEngine.Events;
+using UnityEngine.EventSystems;
 using Unity.FPS.Game;
 using UnityEngine;
 
@@ -55,6 +57,7 @@ namespace Unity.FPS.Gameplay
         [Header("Debug")] [Tooltip("Color of the projectile radius debug view")]
         public Color RadiusColor = Color.cyan * 0.2f;
 
+        private ObjectPool m_ObjectPool;
         ProjectileBase m_ProjectileBase;
         Vector3 m_LastRootPosition;
         Vector3 m_Velocity;
@@ -68,13 +71,16 @@ namespace Unity.FPS.Gameplay
 
         void OnEnable()
         {
+            m_ObjectPool = FindObjectOfType<ObjectPool>();
+            DebugUtility.HandleErrorIfNullFindObject<ObjectPool, ProjectileStandard>( m_ObjectPool, this );
+
             m_ProjectileBase = GetComponent<ProjectileBase>();
             DebugUtility.HandleErrorIfNullGetComponent<ProjectileBase, ProjectileStandard>(m_ProjectileBase, this,
                 gameObject);
 
             m_ProjectileBase.OnShoot += OnShoot;
 
-            Destroy(gameObject, MaxLifeTime);
+            m_ObjectPool.DelayDeactivate( this.gameObject, MaxLifeTime );
         }
 
         new void OnShoot()
@@ -257,7 +263,7 @@ namespace Unity.FPS.Gameplay
             }
 
             // Self Destruct
-            Destroy(this.gameObject);
+            m_ObjectPool.DeactivatePoolObject(this.gameObject);
         }
 
         void OnDrawGizmosSelected()

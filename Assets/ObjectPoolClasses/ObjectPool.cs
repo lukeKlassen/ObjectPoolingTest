@@ -2,11 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Stores a user-defined number of a game object for re-use
 public class ObjectPool : MonoBehaviour
 {
     [SerializeField] private GameObject m_pooledGameObject = null; // game object to pool 
     [SerializeField] private int m_numPooled = 10; // number of game objects to store in pool
+    [SerializeField] private string m_poolStats;
     private List<GameObject> _inactivePool; // list of gameobjects which can be reused
     private List<GameObject> _activePool; // list of gameobjects which are in use
 
@@ -31,12 +31,17 @@ public class ObjectPool : MonoBehaviour
         }
     }
 
+    void Update()
+    {
+        m_poolStats = "num Pooled: " + m_numPooled + " inactive: " + _inactivePool.Count + " active: " + _activePool.Count;
+    }
+
     /*
         Returns an object from the pool which has inUse: False
         If all objects in the pool are in use, it will instead Instantiate and return 
         a new game object of this type. 
     */
-    public GameObject GetInactivePoolObject( System.Action<GameObject> InitializeRoutine ) {
+    public GameObject GetInactivePoolObject() {
         while ( _inactivePool.Count > 0 ) { // for safety we run through inactive pool, checking to make sure our object is inactive
             GameObject poppedObject = _inactivePool[ _inactivePool.Count - 1 ];
             _inactivePool.RemoveAt(_inactivePool.Count - 1); // RemoveAt is O(1) at last index
@@ -51,8 +56,6 @@ public class ObjectPool : MonoBehaviour
         GameObject g = Instantiate( m_pooledGameObject );
         _activePool.Add( g );
         m_numPooled++;
-        InitializeRoutine( g ); // call the input method to reset object info
-        g.SetActive( true );
         return g;
     }
 
@@ -63,5 +66,14 @@ public class ObjectPool : MonoBehaviour
         g.SetActive( false );
         _activePool.Remove( g ); // requires linear search through the active pool
         _inactivePool.Add( g );
+    }
+
+    public void DelayDeactivate( GameObject g, float timeDelay ) {
+        StartCoroutine( DelayCoroutine( g, timeDelay ) );
+    }
+
+    private IEnumerator DelayCoroutine( GameObject g, float timeDelay ) {
+        yield return new WaitForSeconds( timeDelay ); // wait timeDelay before deactivating the pool object
+        DeactivatePoolObject( g );
     }
 }

@@ -162,6 +162,7 @@ namespace Unity.FPS.Game
         const string k_AnimAttackParameter = "Attack";
 
         private Queue<Rigidbody> m_PhysicalAmmoPool;
+        private ObjectPool m_ObjectPool;
 
         void Awake()
         {
@@ -172,6 +173,9 @@ namespace Unity.FPS.Game
             m_ShootAudioSource = GetComponent<AudioSource>();
             DebugUtility.HandleErrorIfNullGetComponent<AudioSource, WeaponController>(m_ShootAudioSource, this,
                 gameObject);
+
+            m_ObjectPool = FindObjectOfType<ObjectPool>();
+            DebugUtility.HandleErrorIfNullGetComponent<ObjectPool, WeaponController>(m_ObjectPool, this, gameObject);
 
             if (UseContinuousShootSound)
             {
@@ -447,9 +451,11 @@ namespace Unity.FPS.Game
             for (int i = 0; i < bulletsPerShotFinal; i++)
             {
                 Vector3 shotDirection = GetShotDirectionWithinSpread(WeaponMuzzle);
-                ProjectileBase newProjectile = Instantiate(ProjectilePrefab, WeaponMuzzle.position,
-                    Quaternion.LookRotation(shotDirection));
-                newProjectile.Shoot(this);
+                GameObject projectileObject = m_ObjectPool.GetInactivePoolObject();
+                projectileObject.transform.position = WeaponMuzzle.position;
+                projectileObject.transform.rotation = Quaternion.LookRotation( shotDirection );
+                projectileObject.SetActive( true );
+                projectileObject.GetComponent<ProjectileBase>()?.Shoot(this);
             }
 
             // muzzle flash
